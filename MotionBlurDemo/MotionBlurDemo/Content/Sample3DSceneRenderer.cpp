@@ -172,6 +172,10 @@ void Sample3DSceneRenderer::Render()
 		0
 		);
 
+	ID3D11ShaderResourceView* depthSRV = m_deviceResources->GetDepthShaderResourceView();
+	context->PSSetShaderResources(0, 1, &depthSRV); // bind to slot 0, use t0 when pixel shader declares depth texture
+
+
 	// Draw the objects.
 	context->DrawIndexed(
 		m_indexCount,
