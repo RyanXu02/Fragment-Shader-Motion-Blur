@@ -380,14 +380,13 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 			)
 		);
 
-	// Create a depth stencil view for use with 3D rendering if needed.
 	CD3D11_TEXTURE2D_DESC1 depthStencilDesc(
-		DXGI_FORMAT_D24_UNORM_S8_UINT, 
+		DXGI_FORMAT_R24G8_TYPELESS, 
 		lround(m_d3dRenderTargetSize.Width),
 		lround(m_d3dRenderTargetSize.Height),
-		1, // This depth stencil view has only one texture.
-		1, // Use a single mipmap level.
-		D3D11_BIND_DEPTH_STENCIL
+		1, // Only one texture
+		1, // Single mipmap level
+		D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE
 		);
 
 	ComPtr<ID3D11Texture2D1> depthStencil;
@@ -399,7 +398,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 			)
 		);
 
-	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D, DXGI_FORMAT_D24_UNORM_S8_UINT);
 	DX::ThrowIfFailed(
 		m_d3dDevice->CreateDepthStencilView(
 			depthStencil.Get(),
@@ -407,6 +406,21 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 			&m_d3dDepthStencilView
 			)
 		);
+
+	// Shader resource view for the depth buffer.
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	DX::ThrowIfFailed(
+		m_d3dDevice->CreateShaderResourceView(
+			depthStencil.Get(),
+			&srvDesc,
+			&m_depthShaderResourceView 
+		)
+	);
 	
 	// Set the 3D rendering viewport to target the entire window.
 	m_screenViewport = CD3D11_VIEWPORT(
